@@ -7,32 +7,33 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 
 import dad.gesaula.ui.model.Alumno;
-import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ListProperty;
-import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleListProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.Alert.AlertType;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.BorderPane;
 
 public class AlumnosController implements Initializable {
 
+	private PanelController panelController = new PanelController();
+	
 	// model
 	private ListProperty<Alumno> alumnos = new SimpleListProperty<>(FXCollections.observableArrayList());
-	private IntegerProperty selectedName = new SimpleIntegerProperty();
+	private ObjectProperty<Alumno> selected = new SimpleObjectProperty<>();
 
 	// view
 	@FXML
@@ -47,7 +48,8 @@ public class AlumnosController implements Initializable {
 	private Button eliminarButton, nuevoButton;
 
 	@FXML
-	private AnchorPane derechaPane;
+	private BorderPane rightPanel;
+	
 	@FXML
 	private Label infoLabel;
 	@FXML
@@ -67,8 +69,6 @@ public class AlumnosController implements Initializable {
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-		// cargar imágenes
-		loadImages();
 
 		// bindings
 		nombreColumn.setCellValueFactory(v -> v.getValue().nombreProperty());
@@ -77,25 +77,26 @@ public class AlumnosController implements Initializable {
 		dataTable.itemsProperty().bind(alumnos);
 
 		// disable botón eliminar
-		selectedName.bind(dataTable.getSelectionModel().selectedIndexProperty());
-		eliminarButton.disableProperty().bind(selectedName.lessThan(0));
+		selected.bind(dataTable.getSelectionModel().selectedItemProperty());
+		eliminarButton.disableProperty().bind(selected.isNull());
 
-	}
-
-	private void loadImages() {
-		Image image1 = new Image(getClass().getResourceAsStream("/images/add-32x32.png"));
-		ImageView imageView1 = new ImageView(image1);
-		nuevoButton.setGraphic(imageView1);
-		Image image2 = new Image(getClass().getResourceAsStream("/images/del-32x32.png"));
-		ImageView imageView2 = new ImageView(image2);
-		eliminarButton.setGraphic(imageView2);
+		selected.addListener((o, ov, nv) -> {
+			if (nv != null) {
+				System.out.println("hay uno seleccionado");
+				rightPanel.setCenter(panelController.getView());
+			} else {
+				System.out.println("NO hay uno seleccionado");
+				rightPanel.setCenter(infoLabel);
+			}
+		});
+		
 	}
 
 	@FXML
 	void onEliminarAction(ActionEvent event) {
 		Alert alert = new Alert(AlertType.CONFIRMATION);
 		alert.setTitle("Eliminar alumno");
-		alert.setHeaderText("Se va a eliminar el alumno " + "'" + alumnos.get(selectedName.intValue()) + "'.");
+		alert.setHeaderText("Se va a eliminar el alumno " + "'" + selected + "'.");
 		alert.setContentText("¿Está seguro?");
 
 		Optional<ButtonType> result = alert.showAndWait();
